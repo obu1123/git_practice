@@ -1,3 +1,0 @@
-echo "# git_practice" > README.md
-git add .
-git commit -m "first commit"

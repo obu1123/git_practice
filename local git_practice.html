@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ランダム名言ジェネレーター</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    #quote {
+      font-size: 20px;
+      margin: 20px;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      display: inline-block;
+      background-color: #f9f9f9;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>ランダム名言ジェネレーター</h1>
+  <div id="quote">ここに名言が表示されます</div><br>
+  <button onclick="showQuote()">名言を表示</button>
+
+  <script>
+    const quotes = [
+      "失敗は成功のもと。",
+      "継続は力なり。",
+      "今日できることを明日に延ばすな。",
+      "千里の道も一歩から。",
+      "習うより慣れろ。"
+    ];
+
+    function showQuote() {
+      const randomIndex = Math.floor(Math.random() * quotes.length);
+      document.getElementById("quote").innerText = quotes[randomIndex];
+    }
+  </script>
+</body>
+</html>
