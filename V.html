@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V字モデル開発フロー (詳細ドキュメント付き)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Interフォントの設定 */
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* 全体的なコンテナ */
+        .v-model-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            max-width: 1200px; /* 横幅を拡張 */
+            margin: 0 auto;
+            background-color: #f9fafb; /* gray-50 */
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        /* フェーズ名ボックスのスタイル */
+        .phase-box {
+            width: 200px; 
+            padding: 0.75rem 0.5rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            font-weight: 700;
+            text-align: center;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease-in-out;
+            flex-shrink: 0; /* 縮まないようにする */
+            z-index: 20;
+        }
+
+        /* 詳細説明ボックスのスタイル */
+        .detail-box {
+            width: 350px;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem; /* text-sm */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin: 0 1rem;
+            transition: all 0.2s ease-in-out;
+            flex-grow: 1; /* 柔軟に広がる */
+        }
+        .detail-box h3 {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px dashed;
+            padding-bottom: 0.25rem;
+            font-size: 1rem;
+        }
+        .detail-box ul {
+            list-style: disc;
+            padding-left: 1.25rem;
+            margin-top: 0.5rem;
+        }
+        .detail-box ul li {
+            line-height: 1.4;
+            margin-bottom: 0.2rem;
+        }
+        .detail-box .document-list {
+            list-style: none;
+            padding-left: 0;
+            font-style: italic;
+            font-weight: 500;
+            margin-top: 0.2rem;
+        }
+
+        /* 設計フェーズの色とスタイル */
+        .design-phase { background-color: #3B82F6; /* blue-500 */ }
+        .design-detail { 
+            background-color: #E0F2FE; /* sky-100 */
+            border: 1px solid #93C5FD; /* blue-300 */
+            text-align: right;
+            border-left: 5px solid #3B82F6;
+        }
+        .design-detail h3 { border-bottom-color: #93C5FD; }
+
+        /* テストフェーズの色とスタイル */
+        .test-phase { background-color: #10B981; /* green-500 */ }
+        .test-detail { 
+            background-color: #D1FAE5; /* green-100 */
+            border: 1px solid #6EE7B7; /* green-300 */
+            text-align: left;
+            border-right: 5px solid #10B981;
+        }
+        .test-detail h3 { border-bottom-color: #6EE7B7; }
+
+        /* 実装フェーズの色 */
+        .implementation-phase { background-color: #1F2937; /* gray-800 */ }
+
+        /* V字の行全体 */
+        .v-row-wrapper {
+            display: flex;
+            align-items: flex-start; /* 上揃え */
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        /* 中央の検証関係矢印 */
+        .verification-connector {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 0 1rem;
+            min-width: 150px;
+        }
+        .verification-arrow {
+            color: #EF4444; /* red-500 */
+            font-size: 1.5rem;
+            font-weight: 800;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .verification-text {
+            font-size: 0.75rem;
+            color: #EF4444;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        /* 縦線（V字のライン） */
+        .vertical-line {
+            position: absolute;
+            width: 2px;
+            height: 100%;
+            z-index: 10;
+        }
+        .vertical-line.left {
+            left: 285px; /* phase-box (200px) + detail (350px) + margin (1rem/16px) + α */
+            background-color: #60A5FA; /* blue-400 */
+        }
+        .vertical-line.right {
+            right: 285px; 
+            background-color: #34D399; /* green-400 */
+        }
+
+        /* 実装フェーズの配置 */
+        .implementation-row {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .implementation-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 500px;
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 sm:p-8">
+
+    <div class="v-model-container">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-800 tracking-tight">
+                V字モデル 詳細版: 工程とドキュメントの対応
+            </h1>
+            <p class="mt-2 text-lg text-gray-600">
+                設計（左）で作成したドキュメントを、対応するテスト（右）で検証します。
+            </p>
+        </header>
+        
+        <!-- 縦線の設定 (絶対位置) -->
+        <!-- 高さの計算が動的に難しいため、CSSで最小限の表現とするか、各行のコネクタを工夫する必要がありますが、今回はシンプルな縦線として表現します -->
+        <!-- 縦線は各v-row_wrapperの間に挿入します -->
+
+        <!-- ------------------------------------------------------------------------------------------------------ -->
+        <!-- 1. ユーザー要求 vs 受入テスト -->
+        <div class="v-row-wrapper top">
+            <!-- 左側: ユーザー要求 -->
+            <div class="flex items-start justify-end flex-grow">
+                <div class="detail-box design-detail">
+                    <h3>実施概要</h3>
+                    <ul>
+                        <li>開発の目的、ビジネス効果、予算、スケジュールを決定。</li>
+                        <li>顧客・ユーザーの要望（要求）を広くヒアリングし、洗い出す。</li>
+                    </ul>
+                    <div class="document-list">📄 **システム化計画書**、費用対効果分析（ROI）レポート</div>
+                </div>
+                <div class="phase-box design-phase">ユーザー要求</div>
+            </div>
+
+            <!-- 中央: 検証コネクタ -->
+            <div class="verification-connector">
+                <div class="verification-arrow">
+                    <span>➡️</span>
+                    <span class="verification-text">検証</span>
+                </div>
+            </div>
+
+            <!-- 右側: 受入テスト -->
+            <div class="flex items-start justify-start flex-grow">
+                <div class="phase-box test-phase">受入テスト</div>
+                <div class="detail-box test-detail">
+                    <h3>検証概要</h3>
+                    <ul>
+                        <li>システムが納品要件を満たし、顧客のビジネスに適用できるかを最終確認する。</li>
+                        <li>操作性、業務への適用可否、マニュアル通りに利用できるかを確認。</li>
+                    </ul>
+                    <div class="document-list">📄 受入テスト仕様書 / 結果報告書</div>
+                </div>
+            </div>
+        </div>
+        <!-- V字間のスペース -->
+        <div class="w-full h-8 relative">
+            <div class="vertical-line left h-full top-0"></div>
+            <div class="vertical-line right h-full top-0"></div>
+        </div>
+        <!-- ------------------------------------------------------------------------------------------------------ -->
+
+
+        <!-- 2. ソフトウェア要求仕様 vs システムテスト -->
+        <div class="v-row-wrapper">
+            <!-- 左側: ソフトウェア要求仕様 -->
+            <div class="flex items-start justify-end flex-grow">
+                <div class="detail-box design-detail">
+                    <h3>実施概要</h3>
+                    <ul>
+                        <li>「何を」作るかを機能要件と非機能要件に分解し、明確に定義する。</li>
+                        <li>このドキュメントが全ての開発作業の基盤となる。</li>
+                    </ul>
+                    <div class="document-list">📄 **要求定義書 / 要件定義書**、非機能要件定義書</div>
+                </div>
+                <div class="phase-box design-phase">ソフトウェア要求仕様</div>
+            </div>
+
+            <!-- 中央: 検証コネクタ -->
+            <div class="verification-connector">
+                <div class="verification-arrow">
+                    <span>➡️</span>
+                    <span class="verification-text">検証</span>
+                </div>
+            </div>
+
+            <!-- 右側: システムテスト -->
+            <div class="flex items-start justify-start flex-grow">
+                <div class="phase-box test-phase">システムテスト</div>
+                <div class="detail-box test-detail">
+                    <h3>検証概要</h3>
+                    <ul>
+                        <li>本番環境に近い形で、システム全体が要件定義書（機能・非機能）を満たすか総合的に確認する。</li>
+                        <li>性能、負荷、セキュリティ、障害復旧などの非機能テストも含む。</li>
+                    </ul>
+                    <div class="document-list">📄 システムテスト仕様書 / 結果報告書、性能テスト報告書</div>
+                </div>
+            </div>
+        </div>
+        <!-- V字間のスペース -->
+        <div class="w-full h-8 relative">
+            <div class="vertical-line left h-full top-0"></div>
+            <div class="vertical-line right h-full top-0"></div>
+        </div>
+        <!-- ------------------------------------------------------------------------------------------------------ -->
+
+
+        <!-- 3. 基本設計 vs 結合テスト -->
+        <div class="v-row-wrapper mid">
+            <!-- 左側: 基本設計 -->
+            <div class="flex items-start justify-end flex-grow">
+                <div class="detail-box design-detail">
+                    <h3>実施概要</h3>
+                    <ul>
+                        <li>利用者視点での設計（外部設計）を行う。</li>
+                        <li>画面、帳票、外部インターフェースの仕様を確定する。</li>
+                    </ul>
+                    <div class="document-list">📄 **基本設計書 / 外部設計書**、画面遷移図、帳票設計書</div>
+                </div>
+                <div class="phase-box design-phase">基本設計</div>
+            </div>
+
+            <!-- 中央: 検証コネクタ -->
+            <div class="verification-connector">
+                <div class="verification-arrow">
+                    <span>➡️</span>
+                    <span class="verification-text">検証</span>
+                </div>
+            </div>
+
+            <!-- 右側: 結合テスト -->
+            <div class="flex items-start justify-start flex-grow">
+                <div class="phase-box test-phase">結合テスト</div>
+                <div class="detail-box test-detail">
+                    <h3>検証概要</h3>
+                    <ul>
+                        <li>複数のモジュールを組み合わせて、その間の連携やインターフェースの動作が基本設計通りかを確認する。</li>
+                        <li>データが設計通りに正しく受け渡されているかを検証。</li>
+                    </ul>
+                    <div class="document-list">📄 結合テスト仕様書 / 結果報告書、データ連携確認表</div>
+                </div>
+            </div>
+        </div>
+        <!-- V字間のスペース -->
+        <div class="w-full h-8 relative">
+            <div class="vertical-line left h-full top-0"></div>
+            <div class="vertical-line right h-full top-0"></div>
+        </div>
+        <!-- ------------------------------------------------------------------------------------------------------ -->
+
+
+        <!-- 4. 詳細設計 vs 単体テスト -->
+        <div class="v-row-wrapper bottom">
+            <!-- 左側: 詳細設計 -->
+            <div class="flex items-start justify-end flex-grow">
+                <div class="detail-box design-detail">
+                    <h3>実施概要</h3>
+                    <ul>
+                        <li>プログラマー向けの詳細な内部設計を行う。</li>
+                        <li>モジュール分割、クラス定義、データベース物理設計を行う。</li>
+                    </ul>
+                    <div class="document-list">📄 **詳細設計書 / 内部設計書**、モジュール構成図、DB物理設計書</div>
+                </div>
+                <div class="phase-box design-phase">詳細設計</div>
+            </div>
+
+            <!-- 中央: 検証コネクタ -->
+            <div class="verification-connector">
+                <div class="verification-arrow">
+                    <span>➡️</span>
+                    <span class="verification-text">検証</span>
+                </div>
+            </div>
+
+            <!-- 右側: 単体テスト -->
+            <div class="flex items-start justify-start flex-grow">
+                <div class="phase-box test-phase">単体テスト</div>
+                <div class="detail-box test-detail">
+                    <h3>検証概要</h3>
+                    <ul>
+                        <li>個々のモジュールや関数が、詳細設計書に記述された仕様通りに動作するかを確認する。</li>
+                        <li>開発者が実施する最も粒度の小さいテスト。</li>
+                    </ul>
+                    <div class="document-list">📄 単体テスト仕様書 / 結果報告書</div>
+                </div>
+            </div>
+        </div>
+        <!-- V字間のスペース -->
+        <div class="w-full h-8 relative">
+            <!-- V字の底への接続線 -->
+            <div class="vertical-line left h-full top-0 bg-gray-400"></div>
+        </div>
+        <!-- ------------------------------------------------------------------------------------------------------ -->
+
+
+        <!-- 5. 実装・コーディング (V字の底) -->
+        <div class="implementation-row">
+            <div class="implementation-content">
+                <div class="phase-box implementation-phase">実装・コーディング</div>
+                <div class="detail-box p-4 mt-4 bg-white border border-gray-300 text-gray-700 text-center w-full">
+                    <h3>実施概要: 設計の具現化</h3>
+                    <p>詳細設計書に基づき、プログラムコードを記述するフェーズ。</p>
+                    <div class="document-list">📄 **ソースコード**</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

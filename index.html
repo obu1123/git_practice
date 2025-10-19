@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"> 
+    <title>勉強会デモ</title>
+</head>
+<body>
+    <h1>フロントエンドとバックエンド</h1>
+    <p>ブラウザでこのページが見えているのは「フロントエンド」の役割です。</p>
+    <button onclick="fetchData()">データ取得</button>
+    <p id="data-result"></p>
+
+    <script>
+    function fetchData() {
+        document.getElementById('data-result').innerText = "サーバーからデータ取得中...";
+        setTimeout(() => {
+            document.getElementById('data-result').innerText = "❌ サーバーが見つかりません。動的な情報はバックエンドがないと取得できません。";
+        }, 1000);
+    }
+    </script>
+</body>
+</html>

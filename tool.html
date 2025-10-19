@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDoリスト基本設計UIイメージ</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+        h1 { border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
+        button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+        .primary { background-color: #007bff; color: white; }
+        .danger { background-color: #dc3545; color: white; }
+        .success { background-color: #28a745; color: white; }
+
+        /* タスク一覧のスタイル */
+        .task-list { list-style: none; padding: 0; }
+        .task-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #eee; }
+        .completed { text-decoration: line-through; color: #888; }
+
+        /* フォームのスタイル */
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input[type="text"], input[type="date"] { width: 90%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; }
+        .error { color: #dc3545; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ToDoリスト機能</h1>
+
+        <div id="message" style="color: #28a745; font-weight: bold; margin-bottom: 15px;"></div>
+
+        <div id="listView">
+            <button class="primary" onclick="showRegisterView()">+ タスク登録</button>
+
+            <h2>未完了タスク</h2>
+            <ul class="task-list" id="todoList"> 
+                <li>
+                    <span>**資料作成** (期日: 2025/10/15)</span>
+                    <div>
+                        <button class="success" onclick="markComplete(this)">完了</button>
+                        <button class="danger">削除</button>
+                    </div>
+                </li>
+                <li>
+                    <span>**〇〇部長へメール** (期日: なし)</span>
+                    <div>
+                        <button class="success" onclick="markComplete(this)">完了</button>
+                        <button class="danger">削除</button>
+                    </div>
+                </li>
+            </ul>
+
+            <hr style="margin: 20px 0;">
+
+            <h2>完了タスク</h2>
+            <ul class="task-list" id="completedList">
+                <li class="completed">
+                    <span>朝会に参加</span>
+                    <div>
+                        </div>
+                </li>
+            </ul>
+        </div>
+
+        <div id="registerView" style="display: none;">
+            <h2>新規タスク登録</h2>
+            <form id="taskForm">
+                <label for="taskName">タスク名 <span style="color:red;">(必須)</span>:</label>
+                <input type="text" id="taskName" name="taskName" required>
+                <div id="nameError" class="error"></div>
+
+                <label for="dueDate">期日 (任意):</label>
+                <input type="date" id="dueDate" name="dueDate">
+
+                <div style="margin-top: 20px;">
+                    <button type="submit" class="primary">登録</button>
+                    <button type="button" onclick="showListView()">キャンセル</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const listView = document.getElementById('listView');
+        const registerView = document.getElementById('registerView');
+        const taskForm = document.getElementById('taskForm');
+        const taskNameInput = document.getElementById('taskName');
+        const nameError = document.getElementById('nameError');
+        const message = document.getElementById('message');
+        
+        // 💡 修正箇所: 新しいタスクを追加するためのDOM要素を取得
+        const todoList = document.getElementById('todoList'); 
+        const completedList = document.getElementById('completedList');
+
+
+        // 画面遷移図 (3.) の実装
+        function showRegisterView() {
+            listView.style.display = 'none';
+            registerView.style.display = 'block';
+            message.textContent = ''; // メッセージをクリア
+            nameError.textContent = ''; // エラーをクリア
+            taskForm.reset(); // フォームをリセット
+        }
+
+        function showListView(msg = '') {
+            listView.style.display = 'block';
+            registerView.style.display = 'none';
+            message.textContent = msg;
+            nameError.textContent = ''; // エラーをクリア
+        }
+
+        // 💡 追加関数: 新しいタスクをリストに追加する処理
+        function addTaskToList(taskName, dueDate) {
+            const li = document.createElement('li');
+            let dateText = dueDate ? `(期日: ${dueDate})` : '(期日: なし)';
+            
+            li.innerHTML = `
+                <span>**${taskName}** ${dateText}</span>
+                <div>
+                    <button class="success" onclick="markComplete(this)">完了</button>
+                    <button class="danger">削除</button>
+                </div>
+            `;
+            // 未完了タスクのリストの先頭に追加
+            todoList.prepend(li);
+        }
+
+        // 機能詳細 (4.2.) の実装 (タスク登録) - 修正版
+        taskForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // フォームの送信を一旦停止
+
+            const taskName = taskNameInput.value.trim();
+            const dueDate = document.getElementById('dueDate').value;
+
+            // 入力チェック (処理 1.)
+            if (taskName === '') {
+                nameError.textContent = 'タスク名は必須です。';
+                return;
+            }
+
+            // 💡 修正箇所: 登録時に一覧へタスクを追加
+            addTaskToList(taskName, dueDate);
+            
+            taskForm.reset(); // フォームをリセット
+            showListView('✅ タスクを登録しました'); // 出力 (メッセージ表示と一覧画面へ遷移)
+        });
+
+        // 機能詳細 (4.3.) の実装 (タスク完了処理)
+        function markComplete(buttonElement) {
+            const listItem = buttonElement.closest('li');
+            
+            // 処理 (2.) データベースの「状態」を「完了」に更新
+            listItem.classList.add('completed');
+            
+            // 完了ボタンと削除ボタンを非表示にする
+            buttonElement.parentNode.innerHTML = ''; 
+            
+            // 💡 追加処理: 完了リストへ移動させる (表示上のソート処理を簡易的に再現)
+            completedList.prepend(listItem);
+
+
+            // 出力 (一覧画面の更新)
+            message.textContent = '✅ タスクを完了状態に更新しました';
+        }
+    </script>
+</body>
+</html>
